@@ -1,4 +1,4 @@
-FROM php:7.4-fpm-alpine
+FROM php:8.1-fpm-alpine
 
 RUN apk --update add wget \
     curl \
@@ -18,27 +18,18 @@ RUN apk --update add wget \
     libgsasl-dev \
     supervisor
 
-RUN docker-php-ext-install mysqli pdo pdo_mysql tokenizer xml pcntl posix
+ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
 
-RUN pecl channel-update pecl.php.net && \
-    pecl install mcrypt && \
-    pecl install memcached && \
-    pecl install imagick && \
-    pecl install redis && \
-    docker-php-ext-enable mcrypt && \
-    docker-php-ext-enable memcached && \
-    docker-php-ext-enable imagick && \
-    docker-php-ext-configure opcache --enable-opcache && \
-    docker-php-ext-install opcache && \
-    docker-php-ext-enable redis && \
-    rm /var/cache/apk/* && \
-    mkdir -p /var/www
+RUN chmod +x /usr/local/bin/install-php-extensions && \
+    install-php-extensions memcached mcrypt imagick redis mysqli opcache pcntl pdo_mysql sodium zip curl;
+
+RUN mkdir -p /var/www
 
 COPY opcache.ini $PHP_INI_DIR
 
 # Setup sendportal
 WORKDIR /app
-RUN git clone https://github.com/mettle/sendportal.git .
+RUN git clone https://github.com/ProMasoud/sendportal.git .
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 RUN composer install --ignore-platform-reqs
 RUN chmod +x /app/artisan
